@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Log in | GoalTrack</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body class="auth-body">
+
+    <main class="auth-shell">
+
+        <!-- LEFT SIDE DESIGN -->
+        <section class="auth-art">
+
+            <a class="brand brand-light" href="../index.html">
+                <span class="brand-mark">G</span>
+                <span>GoalTrack</span>
+            </a>
+
+            <div>
+                <p class="eyebrow light-eyebrow">
+                    YOUR NEXT CHAPTER STARTS HERE
+                </p>
+
+                <h1>Make space for the goals that matter.</h1>
+
+                <p>
+                    Plan your days, build better habits and celebrate every bit of progress.
+                </p>
+            </div>
+
+            <span class="auth-art-footer">
+                Small steps. Big possibilities.
+            </span>
+
+        </section>
+
+
+        <!-- RIGHT SIDE LOGIN FORM -->
+        <section class="auth-form-wrap">
+
+            <form class="auth-form" id="loginForm">
+
+                <a class="mobile-brand brand" href="../index.html">
+                    <span class="brand-mark">G</span>
+                    <span>GoalTrack</span>
+                </a>
+
+                <p class="eyebrow">WELCOME BACK</p>
+
+                <h2>Log in to your account</h2>
+
+                <p class="muted">
+                    Pick up where you left off.
+                </p>
+
+
+                <!-- EMAIL -->
+                <label for="email">Email address</label>
+
+                <input
+                    class="field"
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    required
+                    autocomplete="email"
+                >
+
+
+                <!-- PASSWORD -->
+                <label for="password">Password</label>
+
+                <div class="password-wrap">
+
+                    <input
+                        class="field"
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+
+                    <button
+                        type="button"
+                        class="show-password"
+                        data-toggle="password"
+                    >
+                        Show
+                    </button>
+
+                </div>
+
+
+                <!-- LOGIN BUTTON -->
+                <button
+                    class="button button-primary auth-submit"
+                    type="submit"
+                >
+                    Log in
+                </button>
+
+
+                <!-- REGISTER LINK -->
+                <p class="auth-switch">
+                    New to GoalTrack?
+                    <a href="register.html">Create an account</a>
+                </p>
+
+
+                <!-- LOGIN STATUS MESSAGE -->
+                <p
+                    id="authMessage"
+                    class="auth-message"
+                    aria-live="polite"
+                ></p>
+
+            </form>
+
+        </section>
+
+    </main>
+
+
+    <!-- AUTHENTICATION JAVASCRIPT -->
+    <script src="../js/auth.js"></script>
+
+</body>
+</html>
