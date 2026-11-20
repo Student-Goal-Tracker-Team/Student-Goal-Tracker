@@ -13,17 +13,18 @@ const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test route
+// Home route
 app.get("/", (req, res) => {
     res.send("GoalTrack Backend is running!");
 });
 
-// ===============================
-// REGISTER
-// ===============================
+// ==========================================
+// USER REGISTRATION
+// ==========================================
 
 app.post("/api/auth/register", async (req, res) => {
     try {
@@ -74,15 +75,16 @@ app.post("/api/auth/register", async (req, res) => {
 
     } catch (error) {
         console.error("Registration error:", error);
+
         res.status(500).json({
             message: "Registration failed."
         });
     }
 });
 
-// ===============================
-// LOGIN
-// ===============================
+// ==========================================
+// USER LOGIN
+// ==========================================
 
 app.post("/api/auth/login", async (req, res) => {
     try {
@@ -94,8 +96,10 @@ app.post("/api/auth/login", async (req, res) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         const user = await User.findOne({
-            email: email.trim().toLowerCase()
+            email: normalizedEmail
         });
 
         if (!user) {
@@ -104,12 +108,12 @@ app.post("/api/auth/login", async (req, res) => {
             });
         }
 
-        const isMatch = await bcrypt.compare(
+        const isPasswordValid = await bcrypt.compare(
             password,
             user.password
         );
 
-        if (!isMatch) {
+        if (!isPasswordValid) {
             return res.status(400).json({
                 message: "Invalid email or password."
             });
@@ -133,118 +137,159 @@ app.post("/api/auth/login", async (req, res) => {
 
     } catch (error) {
         console.error("Login error:", error);
+
         res.status(500).json({
             message: "Login failed."
         });
     }
 });
 
-// ===============================
-// GET LOGGED-IN USER'S GOALS
-// ===============================
+// ==========================================
+// GET ALL GOALS FOR LOGGED-IN USER
+// ==========================================
 
 app.get("/api/goals", authMiddleware, async (req, res) => {
     try {
         const goals = await Goal.find({
             userId: req.userId
-        });
+        }).sort({ createdAt: -1 });
 
         res.json(goals);
 
     } catch (error) {
         console.error("Fetch goals error:", error);
+
         res.status(500).json({
-            message: "Error fetching goals."
+            message: "Error fetching goals"
         });
     }
 });
 
-// ===============================
-// ADD A GOAL
-// ===============================
+// ==========================================
+// ADD NEW GOAL WITH CHECKLIST
+// ==========================================
 
 app.post("/api/goals", authMiddleware, async (req, res) => {
     try {
-        const { title, subject, deadline, priority, progress } = req.body;
+        const {
+            title,
+            subject,
+            deadline,
+            priority,
+            checklist
+        } = req.body;
 
-        if (!title) {
+        if (!title || !title.trim()) {
             return res.status(400).json({
                 message: "Goal title is required."
             });
         }
 
-        const goal = new Goal({
+        const newChecklist = Array.isArray(checklist)
+            ? checklist
+                .filter(item =>
+                    item &&
+                    typeof item.text === "string" &&
+                    item.text.trim()
+                )
+                .map(item => ({
+                    text: item.text.trim(),
+                    completed: Boolean(item.completed)
+                }))
+            : [];
+
+        const newGoal = new Goal({
             userId: req.userId,
-            title,
-            subject,
-            deadline,
-            priority,
-            progress
+            title: title.trim(),
+            subject: subject || "General",
+            deadline: deadline || "",
+            priority: priority || "Medium",
+            checklist: newChecklist
         });
 
-        await goal.save();
+        await newGoal.save();
 
         res.status(201).json({
             message: "Goal added successfully!",
-            goal
+            goal: newGoal
         });
 
     } catch (error) {
         console.error("Add goal error:", error);
+
         res.status(500).json({
-            message: "Error adding goal."
+            message: "Error adding goal"
         });
     }
 });
 
-// ===============================
-// UPDATE A GOAL
-// ===============================
+// ==========================================
+// UPDATE GOAL AND CHECKLIST
+// ==========================================
 
 app.put("/api/goals/:id", authMiddleware, async (req, res) => {
     try {
-        const { title, subject, deadline, priority, progress } = req.body;
+        const goal = await Goal.findOne({
+            _id: req.params.id,
+            userId: req.userId
+        });
 
-        const updatedGoal = await Goal.findOneAndUpdate(
-            {
-                _id: req.params.id,
-                userId: req.userId
-            },
-            {
-                title,
-                subject,
-                deadline,
-                priority,
-                progress
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
-        if (!updatedGoal) {
+        if (!goal) {
             return res.status(404).json({
                 message: "Goal not found."
             });
         }
 
+        if (req.body.title !== undefined) {
+            goal.title = req.body.title;
+        }
+
+        if (req.body.subject !== undefined) {
+            goal.subject = req.body.subject;
+        }
+
+        if (req.body.deadline !== undefined) {
+            goal.deadline = req.body.deadline;
+        }
+
+        if (req.body.priority !== undefined) {
+            goal.priority = req.body.priority;
+        }
+
+        if (req.body.checklist !== undefined) {
+            if (!Array.isArray(req.body.checklist)) {
+                return res.status(400).json({
+                    message: "Checklist must be an array."
+                });
+            }
+
+            goal.checklist = req.body.checklist.map(item => ({
+                text: item.text.trim(),
+                completed: Boolean(item.completed)
+            }));
+        }
+
+        // Automatically calculates progress through the
+        // pre-save middleware in Goal.js
+        await goal.save();
+
         res.json({
             message: "Goal updated successfully!",
-            goal: updatedGoal
+            goal
         });
 
     } catch (error) {
         console.error("Update goal error:", error);
+
         res.status(500).json({
-            message: "Error updating goal."
+            message: "Error updating goal"
         });
     }
 });
 
-// ===============================
-// DELETE A GOAL
-// ===============================
+// ==========================================
+// DELETE GOAL
+// ==========================================
 
 app.delete("/api/goals/:id", authMiddleware, async (req, res) => {
     try {
@@ -265,18 +310,21 @@ app.delete("/api/goals/:id", authMiddleware, async (req, res) => {
 
     } catch (error) {
         console.error("Delete goal error:", error);
+
         res.status(500).json({
-            message: "Error deleting goal."
+            message: "Error deleting goal"
         });
     }
 });
 
-// ===============================
-// START SERVER
-// ===============================
+// ==========================================
+// START SERVER AND CONNECT DATABASE
+// ==========================================
 
-if (!process.env.JWT_SECRET) {
-    console.error("JWT_SECRET is missing from .env file.");
+const PORT = process.env.PORT || 5000;
+
+if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
+    console.error("MONGO_URI or JWT_SECRET is missing from .env");
     process.exit(1);
 }
 
@@ -284,10 +332,10 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log("MongoDB Connected Successfully!");
 
-        app.listen(5000, () => {
-            console.log("GoalTrack server running on port 5000");
+        app.listen(PORT, () => {
+            console.log(`GoalTrack server running on port ${PORT}`);
         });
     })
-    .catch((error) => {
+    .catch(error => {
         console.error("MongoDB connection error:", error);
     });

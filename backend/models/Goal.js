@@ -1,9 +1,19 @@
 
 const mongoose = require("mongoose");
 
-const goalSchema = new mongoose.Schema({
+const checklistSchema = new mongoose.Schema({
+    text: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    }
+});
 
-    // Student who owns this goal
+const goalSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -31,6 +41,11 @@ const goalSchema = new mongoose.Schema({
         default: "Medium"
     },
 
+    checklist: {
+        type: [checklistSchema],
+        default: []
+    },
+
     progress: {
         type: Number,
         default: 0,
@@ -39,6 +54,21 @@ const goalSchema = new mongoose.Schema({
     }
 
 }, { timestamps: true });
+
+// Calculate progress from completed checklist items
+goalSchema.pre("save", function () {
+    if (this.checklist.length === 0) {
+        this.progress = 0;
+    } else {
+        const completedTasks = this.checklist.filter(
+            task => task.completed
+        ).length;
+
+        this.progress = Math.round(
+            (completedTasks / this.checklist.length) * 100
+        );
+    }
+});
 
 const Goal = mongoose.model("Goal", goalSchema);
 
